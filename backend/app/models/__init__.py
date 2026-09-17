@@ -1,5 +1,6 @@
 from app.db.base import Base
 from app.models.affiliate import Affiliate
+from app.models.offer import Offer
 from app.models.order import Order, OrderItem, OrderStatus
 from app.models.product import Category, Product, ProductImage, ProductVariant
 from app.models.user import RefreshToken, User, UserRole
@@ -17,4 +18,5 @@ __all__ = [
     "Order",
     "OrderStatus",
     "OrderItem",
+    "Offer",
 ]

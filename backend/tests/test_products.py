@@ -55,6 +55,7 @@ async def auth_tokens(db_session: AsyncSession):
         email="admin_catalog@example.com",
         hashed_password=get_password_hash("AdminPass123!"),
         full_name="Admin Catalog User",
+        phone="+971501110011",
         role=UserRole.ADMIN,
         is_active=True,
     )
@@ -63,6 +64,7 @@ async def auth_tokens(db_session: AsyncSession):
         email="customer_catalog@example.com",
         hashed_password=get_password_hash("CustPass123!"),
         full_name="Customer Catalog User",
+        phone="+971502220022",
         role=UserRole.CUSTOMER,
         is_active=True,
     )

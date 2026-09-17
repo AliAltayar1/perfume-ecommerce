@@ -92,6 +92,7 @@ async def test_login_flow(client: AsyncClient, db_session: AsyncSession):
         email="shopper@example.com",
         hashed_password=get_password_hash("ValidPass99!"),
         full_name="Fragrance Buyer",
+        phone="+971509998877",
         role=UserRole.CUSTOMER,
         is_active=True,
     )
@@ -124,6 +125,7 @@ async def test_get_me_with_cookie_and_header(client: AsyncClient, db_session: As
         email="me@example.com",
         hashed_password=get_password_hash("Password123!"),
         full_name="Myself",
+        phone="+971508887766",
         role=UserRole.CUSTOMER,
         is_active=True,
     )
@@ -160,6 +162,7 @@ async def test_refresh_token_rotation_and_revocation(client: AsyncClient, db_ses
             "email": "rotator@example.com",
             "password": "Password123!",
             "full_name": "Rotation User",
+            "phone": "+971507776655",
         },
     )
     assert reg_res.status_code == 201
@@ -202,6 +205,7 @@ async def test_logout_clears_cookies_and_revokes_token(client: AsyncClient, db_s
             "email": "logout@example.com",
             "password": "Password123!",
             "full_name": "Logout User",
+            "phone": "+971506665544",
         },
     )
     raw_refresh = reg_res.cookies.get("refresh_token")
@@ -232,6 +236,7 @@ async def test_role_based_access_control(client: AsyncClient, db_session: AsyncS
         email="cust@example.com",
         hashed_password=get_password_hash("Pass123!"),
         full_name="Regular Customer",
+        phone="+971505554433",
         role=UserRole.CUSTOMER,
         is_active=True,
     )
@@ -239,6 +244,7 @@ async def test_role_based_access_control(client: AsyncClient, db_session: AsyncS
         email="admin@example.com",
         hashed_password=get_password_hash("AdminPass123!"),
         full_name="Site Administrator",
+        phone="+971504443322",
         role=UserRole.ADMIN,
         is_active=True,
     )

@@ -17,8 +17,9 @@ class UserBase(BaseModel):
         description="Full name of the user",
         examples=["Sarah Connor"],
     )
-    phone: Optional[str] = Field(
-        None,
+    phone: str = Field(
+        ...,
+        min_length=1,
         max_length=50,
         description="Primary contact number (international format recommended)",
         examples=["+971501234567"],
@@ -54,8 +55,9 @@ class UserRegister(BaseModel):
         description="Full legal or display name",
         examples=["Sarah Connor"],
     )
-    phone: Optional[str] = Field(
-        None,
+    phone: str = Field(
+        ...,
+        min_length=1,
         max_length=50,
         description="Contact phone number",
         examples=["+971501234567"],
@@ -66,14 +68,22 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     full_name: str
-    phone: Optional[str] = None
+    phone: str
     role: UserRole = UserRole.CUSTOMER
 
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(None, min_length=1, max_length=255)
-    phone: Optional[str] = Field(None, max_length=50)
+    phone: Optional[str] = Field(None, min_length=1, max_length=50)
+    email: Optional[EmailStr] = None
     is_active: Optional[bool] = None
+    password: Optional[str] = Field(None, min_length=6)
+
+
+class UserUpdateMe(BaseModel):
+    full_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    phone: Optional[str] = Field(None, min_length=1, max_length=50)
+    email: Optional[EmailStr] = None
     password: Optional[str] = Field(None, min_length=6)
 
 
@@ -94,7 +104,7 @@ class UserResponse(BaseModel):
     id: int = Field(..., description="Unique user identifier", examples=[1])
     email: EmailStr = Field(..., description="User email address", examples=["customer@perfume.com"])
     full_name: str = Field(..., description="User full name", examples=["Sarah Connor"])
-    phone: Optional[str] = Field(None, description="Contact phone", examples=["+971501234567"])
+    phone: str = Field(..., description="Contact phone", examples=["+971501234567"])
     role: UserRole = Field(..., description="Assigned role", examples=["customer"])
     is_active: bool = Field(..., description="Account active status", examples=[True])
     created_at: datetime = Field(..., description="Account creation timestamp")

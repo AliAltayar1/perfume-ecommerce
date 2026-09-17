@@ -35,6 +35,12 @@ from app.schemas.product import (
     ProductVariantResponse,
     ProductVariantUpdate,
 )
+from app.schemas.offer import (
+    OfferBase,
+    OfferCreate,
+    OfferResponse,
+    OfferUpdate,
+)
 from app.schemas.user import (
     MessageResponse,
     UserCreate,
@@ -43,16 +49,22 @@ from app.schemas.user import (
     UserRegister,
     UserResponse,
     UserUpdate,
+    UserUpdateMe,
 )
 
 __all__ = [
     "UserRegister",
     "UserCreate",
     "UserUpdate",
+    "UserUpdateMe",
     "UserLogin",
     "UserResponse",
     "UserOut",
     "MessageResponse",
+    "OfferBase",
+    "OfferCreate",
+    "OfferUpdate",
+    "OfferResponse",
     "AffiliateCreate",
     "AffiliateUpdate",
     "AffiliateResponse",

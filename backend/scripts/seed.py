@@ -17,6 +17,7 @@ from app.core.config import settings
 from app.core.security import get_password_hash
 from app.db.base import Base
 from app.models.affiliate import Affiliate
+from app.models.offer import Offer
 from app.models.order import Order, OrderItem, OrderStatus
 from app.models.product import Category, Product, ProductImage, ProductVariant
 from app.models.user import User, UserRole
@@ -36,24 +37,13 @@ async def seed_database(db_url: str, force: bool = False) -> None:
         await conn.run_sync(Base.metadata.create_all)
 
     async with session_factory() as session:
-        # Check if admin user already exists
-        admin_check = await session.execute(
-            select(User).where(User.email == "admin@perfume.com")
-        )
-        existing_admin = admin_check.scalars().first()
-
-        if existing_admin and not force:
-            print("[INFO] Database already seeded (Admin exists). Use --force to override.")
-            await engine.dispose()
-            return
-
         if force:
             print("[INFO] Force flag detected. Cleaning existing records...")
             try:
                 # Fast truncate for PostgreSQL
                 await session.execute(
                     text(
-                        "TRUNCATE TABLE order_items, orders, affiliates, "
+                        "TRUNCATE TABLE offers, order_items, orders, affiliates, "
                         "product_variants, product_images, products, categories, "
                         "refresh_tokens, users RESTART IDENTITY CASCADE;"
                     )
@@ -63,6 +53,7 @@ async def seed_database(db_url: str, force: bool = False) -> None:
                 await session.rollback()
                 # Fallback for SQLite / engines without CASCADE TRUNCATE
                 for tbl in [
+                    "offers",
                     "order_items",
                     "orders",
                     "affiliates",
@@ -78,6 +69,17 @@ async def seed_database(db_url: str, force: bool = False) -> None:
                     except Exception:
                         pass
                 await session.commit()
+
+        # Check if admin user already exists
+        admin_check = await session.execute(
+            select(User).where(User.email == "admin@perfume.com")
+        )
+        existing_admin = admin_check.scalars().first()
+
+        if existing_admin and not force:
+            print("[INFO] Database already seeded (Admin exists). Use --force to override.")
+            await engine.dispose()
+            return
 
         # -------------------------------------------------------------
         # 1. Seed Core Users
@@ -364,6 +366,32 @@ async def seed_database(db_url: str, force: bool = False) -> None:
         )
         session.add(item2_1)
 
+        # -------------------------------------------------------------
+        # 6. Seed Sample Offers
+        # -------------------------------------------------------------
+        print("[6/6] Seeding Sample Offers...")
+        offer1 = Offer(
+            title="Summer Fragrance Festival",
+            description="Enjoy 20% off all luxury perfumes this summer.",
+            discount_percentage=Decimal("20.00"),
+            discount_amount=None,
+            code="SUMMER20",
+            banner_url="https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=80",
+            product_id=None,
+            is_active=True,
+        )
+        offer2 = Offer(
+            title="Royal Oud Exclusive",
+            description="Flat 50 AED off Royal Cambodian Oud Blend.",
+            discount_percentage=None,
+            discount_amount=Decimal("50.00"),
+            code="ROYAL50",
+            banner_url="https://images.unsplash.com/photo-1547887537-6158d64c35b3?auto=format&fit=crop&w=1200&q=80",
+            product_id=p3.id,
+            is_active=True,
+        )
+        session.add_all([offer1, offer2])
+
         await session.commit()
 
         print("\n[SUCCESS] Database seeding completed successfully!\n")
@@ -373,6 +401,7 @@ async def seed_database(db_url: str, force: bool = False) -> None:
         print("  - Customer: customer@perfume.com / Customer@123")
         print("  - Categories: 2 (French Perfumes, Oud & Oriental)")
         print("  - Products: 4 (9 total variants, all stock > 10)")
+        print("  - Offers: 2 promotional offers (SUMMER20, ROYAL50)")
         print("  - Orders: 2 sample orders (1 pending with ALI2026, 1 delivered)")
 
     await engine.dispose()

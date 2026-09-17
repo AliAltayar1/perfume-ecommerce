@@ -57,6 +57,7 @@ async def setup_data(db_session: AsyncSession):
         email="admin_orders@example.com",
         hashed_password=get_password_hash("AdminPass123!"),
         full_name="Orders Admin",
+        phone="+971501119988",
         role=UserRole.ADMIN,
         is_active=True,
     )
@@ -65,6 +66,7 @@ async def setup_data(db_session: AsyncSession):
         email="customer_orders@example.com",
         hashed_password=get_password_hash("CustPass123!"),
         full_name="Loyal Shopper",
+        phone="+971502229988",
         role=UserRole.CUSTOMER,
         is_active=True,
     )
@@ -73,6 +75,7 @@ async def setup_data(db_session: AsyncSession):
         email="promoter@example.com",
         hashed_password=get_password_hash("Promote123!"),
         full_name="Beauty Influencer",
+        phone="+971503339988",
         role=UserRole.AFFILIATE,
         is_active=True,
     )

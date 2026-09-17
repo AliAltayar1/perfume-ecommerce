@@ -20,6 +20,7 @@ from app.schemas.user import (
     UserLogin,
     UserRegister,
     UserResponse,
+    UserUpdateMe,
 )
 
 router = APIRouter()
@@ -227,3 +228,52 @@ async def get_me(current_user: User = Depends(get_current_user)):
     Return currently authenticated user profile.
     """
     return current_user
+
+
+@router.put("/me", response_model=UserResponse)
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    user_in: UserUpdateMe,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Update profile information (full_name, phone, email, password) for the authenticated user.
+    """
+    if user_in.email is not None and user_in.email != current_user.email:
+        query = select(User).where(User.email == user_in.email, User.id != current_user.id)
+        existing = (await db.execute(query)).scalars().first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A user with this email already exists.",
+            )
+        current_user.email = user_in.email
+
+    if user_in.full_name is not None:
+        current_user.full_name = user_in.full_name
+
+    if user_in.phone is not None:
+        current_user.phone = user_in.phone
+
+    if user_in.password is not None:
+        current_user.hashed_password = get_password_hash(user_in.password)
+
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user
+
+
+@router.delete("/me", response_model=MessageResponse)
+async def delete_me(
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Delete the authenticated user's account and clear authentication cookies.
+    """
+    await db.delete(current_user)
+    await db.commit()
+    clear_auth_cookies(response)
+    return {"message": "User account deleted successfully"}

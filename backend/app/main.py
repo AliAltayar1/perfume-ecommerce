@@ -30,8 +30,16 @@ tags_metadata = [
         "description": "User registration, login, token rotation, and session management using secure HttpOnly dual cookies.",
     },
     {
+        "name": "Customer Information",
+        "description": "Customer self-service endpoints to view, update, and delete account profiles.",
+    },
+    {
         "name": "Products & Catalog",
         "description": "Public storefront catalog endpoints to browse categories, active products with effective pricing, and full product details.",
+    },
+    {
+        "name": "Offers & Promotions",
+        "description": "Public storefront and promotional offer endpoints for active coupons, discounts, and banners.",
     },
     {
         "name": "Orders & Checkout",
@@ -39,7 +47,7 @@ tags_metadata = [
     },
     {
         "name": "Administration",
-        "description": "Admin dashboard endpoints for managing categories, products, inventory variants, orders, and affiliate promoters.",
+        "description": "Admin dashboard endpoints for managing categories, products, inventory variants, offers, orders, and affiliate promoters.",
     },
     {
         "name": "Health",

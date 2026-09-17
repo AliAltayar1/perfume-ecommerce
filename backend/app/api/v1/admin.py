@@ -22,7 +22,13 @@ from app.schemas.product import (
     ProductVariantResponse,
     ProductVariantUpdate,
 )
+from app.schemas.offer import (
+    OfferCreate,
+    OfferResponse,
+    OfferUpdate,
+)
 from app.schemas.user import MessageResponse
+from app.services.offer_service import OfferService
 from app.services.order_service import OrderService
 from app.services.product_service import ProductService
 
@@ -255,3 +261,81 @@ async def list_admin_affiliates(
     Admin: List all affiliates with aggregate performance statistics (referred orders & sales volume).
     """
     return await OrderService.list_admin_affiliates(session=db)
+
+
+# ----------------------------------------------------------------------
+# Offer Management
+# ----------------------------------------------------------------------
+@router.get("/offers", response_model=List[OfferResponse])
+async def list_admin_offers(
+    active_only: bool = Query(False, description="Filter for currently active offers only"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Admin: List all promotional offers.
+    """
+    return await OfferService.list_offers(
+        session=db,
+        active_only=active_only,
+        skip=skip,
+        limit=limit,
+    )
+
+
+@router.get("/offers/{offer_id}", response_model=OfferResponse)
+async def get_admin_offer(
+    offer_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Admin: Get detailed information for a specific offer.
+    """
+    offer = await OfferService.get_offer_by_id(session=db, offer_id=offer_id)
+    if not offer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Offer with ID {offer_id} not found.",
+        )
+    return offer
+
+
+@router.post("/offers", response_model=OfferResponse, status_code=status.HTTP_201_CREATED)
+async def create_admin_offer(
+    offer_in: OfferCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Admin: Create a new promotional offer or discount coupon.
+    """
+    return await OfferService.create_offer(session=db, offer_in=offer_in)
+
+
+@router.put("/offers/{offer_id}", response_model=OfferResponse)
+@router.patch("/offers/{offer_id}", response_model=OfferResponse)
+async def update_admin_offer(
+    offer_id: int,
+    offer_in: OfferUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Admin: Update existing offer attributes.
+    """
+    return await OfferService.update_offer(
+        session=db,
+        offer_id=offer_id,
+        offer_in=offer_in,
+    )
+
+
+@router.delete("/offers/{offer_id}", response_model=MessageResponse)
+async def delete_admin_offer(
+    offer_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Admin: Delete an offer.
+    """
+    await OfferService.delete_offer(session=db, offer_id=offer_id)
+    return {"message": "Offer deleted successfully"}

@@ -343,6 +343,28 @@ async def test_admin_direct_product_image_crud(
     refreshed_img1 = res_img1_db.scalars().first()
     assert refreshed_img1.is_primary is False
 
+    # Verify public storefront GET /products list returns primary_image_url
+    storefront_list_res = await client.get("/api/v1/products")
+    assert storefront_list_res.status_code == 200
+    storefront_items = storefront_list_res.json()
+    assert len(storefront_items) >= 1
+    found_prod = next(p for p in storefront_items if p["id"] == prod.id)
+    assert found_prod["primary_image_url"] == img2_data["url"]
+
+    # Verify public storefront GET /products/{slug} returns images array
+    storefront_detail_res = await client.get(f"/api/v1/products/{prod.slug}")
+    assert storefront_detail_res.status_code == 200
+    detail_data = storefront_detail_res.json()
+    assert len(detail_data["images"]) == 2
+    assert detail_data["images"][0]["url"].startswith("/uploads/products/")
+    assert detail_data["images"][1]["url"].startswith("/uploads/products/")
+
+    # Verify admin GET /admin/products/{id} returns full product details with images
+    admin_detail_res = await client.get(f"/api/v1/admin/products/{prod.id}")
+    assert admin_detail_res.status_code == 200
+    admin_data = admin_detail_res.json()
+    assert len(admin_data["images"]) == 2
+
     # 4. Set first image back to primary
     res_patch = await client.patch(
         f"/api/v1/admin/products/{prod.id}/images/{img1_data['id']}/primary",

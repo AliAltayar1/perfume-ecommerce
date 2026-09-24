@@ -39,8 +39,8 @@ class OfferBase(BaseModel):
     banner_url: Optional[str] = Field(
         None,
         max_length=500,
-        description="Promotional banner image URL",
-        examples=["https://cdn.example.com/banners/summer-sale.jpg"],
+        description="Promotional banner image URL path on server disk",
+        examples=["/uploads/offers/f81c9a02beef437190ad01889efc11a0.webp"],
     )
     product_id: Optional[int] = Field(
         None,
@@ -84,4 +84,23 @@ class OfferResponse(OfferBase):
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "title": "Summer Perfume Sale - 20% Off",
+                "description": "Get 20% off across all French perfumes this week.",
+                "discount_percentage": "20.00",
+                "discount_amount": None,
+                "code": "SUMMER20",
+                "banner_url": "/uploads/offers/f81c9a02beef437190ad01889efc11a0.webp",
+                "product_id": 1,
+                "is_active": True,
+                "start_date": "2026-06-01T00:00:00Z",
+                "end_date": "2026-08-31T23:59:59Z",
+                "created_at": "2026-09-24T12:00:00Z",
+                "updated_at": "2026-09-24T12:00:00Z",
+            }
+        },
+    )

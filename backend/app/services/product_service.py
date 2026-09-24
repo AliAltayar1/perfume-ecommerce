@@ -176,6 +176,26 @@ class ProductService:
             product.variants = [v for v in product.variants if v.is_active]
         return product
 
+    @staticmethod
+    async def get_product_by_id(session: AsyncSession, product_id: int) -> Optional[Product]:
+        """
+        Fetch single product by primary key ID with all variants and sorted images.
+        """
+        query = (
+            select(Product)
+            .where(Product.id == product_id)
+            .options(
+                selectinload(Product.category),
+                selectinload(Product.variants),
+                selectinload(Product.images),
+            )
+        )
+        result = await session.execute(query)
+        product = result.scalars().first()
+        if product:
+            product.images.sort(key=lambda img: img.display_order)
+        return product
+
     # ---------------------------------------------------------
     # Admin Category Operations
     # ---------------------------------------------------------

@@ -24,6 +24,7 @@ A high-performance, asynchronous RESTful API engineered for luxury perfumes and 
 - **Concurrency-Safe Inventory**: Uses pessimistic row-level locking (`SELECT ... FOR UPDATE`) with sorted keys to prevent stock race conditions and deadlocks.
 - **Historical Purchasing Snapshots**: Every line item captures frozen snapshots of unit price, product name, volume, and SKU at purchase time.
 - **Cash on Delivery (COD) & Affiliate Attribution**: Built-in support for guest checkouts, WhatsApp order dispatch confirmations, and affiliate influencer referral tracking.
+- **Automated Media Pipeline & Disk Storage**: Universal format validation (JPEG, PNG, WebP, AVIF, HEIC/HEIF, GIF, BMP, TIFF, SVG), auto-transposed EXIF rotation, unified aspect ratio handling (contain/cover/scale), and high-efficiency WebP compression stored directly on server disk.
 """
 
 tags_metadata = [

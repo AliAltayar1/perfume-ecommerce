@@ -100,6 +100,23 @@ async def list_admin_products(
     )
 
 
+@router.get("/products/{product_id}", response_model=ProductDetailResponse)
+async def get_admin_product(
+    product_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get full product details including variants, images, and category by product ID.
+    """
+    product = await ProductService.get_product_by_id(session=db, product_id=product_id)
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with ID {product_id} not found.",
+        )
+    return product
+
+
 @router.post("/products", response_model=ProductDetailResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     product_in: ProductCreate,

@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 
 # --- Category Schemas ---
@@ -44,8 +44,8 @@ class ProductImageBase(BaseModel):
     url: str = Field(
         ...,
         max_length=500,
-        description="Direct image CDN or public URL",
-        examples=["https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=800&q=80"],
+        description="Public image URL path on server disk",
+        examples=["/uploads/products/d3b07384d113edec49eaa6238ad5ff00.webp"],
     )
     alt_text: Optional[str] = Field(
         None,
@@ -73,7 +73,19 @@ class ProductImageResponse(ProductImageBase):
     id: int = Field(..., description="Unique image identifier", examples=[1])
     product_id: int = Field(..., description="Foreign key linking to product", examples=[1])
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "product_id": 1,
+                "url": "/uploads/products/d3b07384d113edec49eaa6238ad5ff00.webp",
+                "alt_text": "Hero bottle on black marble",
+                "is_primary": True,
+                "display_order": 1,
+            }
+        },
+    )
 
 
 # --- Product Variant Schemas ---
@@ -116,7 +128,7 @@ class ProductVariantBase(BaseModel):
         None,
         max_length=500,
         description="Variant-specific packaging or bottle image URL",
-        examples=["https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=800&q=80"],
+        examples=["/uploads/variants/71e3d9021a8bf92c4b01eec9912048aa.webp"],
     )
     is_active: bool = Field(
         default=True,
@@ -143,7 +155,22 @@ class ProductVariantResponse(ProductVariantBase):
     id: int = Field(..., description="Unique variant identifier", examples=[1])
     product_id: int = Field(..., description="Associated product ID", examples=[1])
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "product_id": 1,
+                "sku": "BRE-50ML",
+                "size_or_volume": "50ml",
+                "price": "120.00",
+                "discount_price": "110.00",
+                "stock": 25,
+                "image_url": "/uploads/variants/71e3d9021a8bf92c4b01eec9912048aa.webp",
+                "is_active": True,
+            }
+        },
+    )
 
 
 # --- Product Schemas ---
@@ -206,8 +233,8 @@ class ProductListResponse(BaseModel):
     is_active: bool = Field(..., description="Active availability status", examples=[True])
     primary_image_url: Optional[str] = Field(
         None,
-        description="Hero showcase image URL",
-        examples=["https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=800&q=80"],
+        description="Hero showcase image URL path",
+        examples=["/uploads/products/d3b07384d113edec49eaa6238ad5ff00.webp"],
     )
     min_price: Optional[Decimal] = Field(
         None,
@@ -230,7 +257,24 @@ class ProductListResponse(BaseModel):
         examples=["French Perfumes"],
     )
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "category_id": 1,
+                "name": "Baccarat Rouge Elite",
+                "slug": "baccarat-rouge-elite",
+                "description": "An intoxicating blend of saffron, Egyptian jasmine, and warm amberwood.",
+                "is_active": True,
+                "primary_image_url": "/uploads/products/d3b07384d113edec49eaa6238ad5ff00.webp",
+                "min_price": "110.00",
+                "max_price": "210.00",
+                "total_stock": 55,
+                "category_name": "French Perfumes",
+            }
+        },
+    )
 
 
 class ProductDetailResponse(BaseModel):
@@ -252,7 +296,68 @@ class ProductDetailResponse(BaseModel):
         description="All product gallery images sorted by display_order",
     )
 
-    model_config = ConfigDict(from_attributes=True)
+    @computed_field
+    @property
+    def primary_image_url(self) -> Optional[str]:
+        """
+        Resolved hero showcase image URL path.
+        """
+        if self.images:
+            for img in self.images:
+                if img.is_primary:
+                    return img.url
+            return self.images[0].url
+        if self.variants:
+            for v in self.variants:
+                if v.image_url:
+                    return v.image_url
+        return None
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "category_id": 1,
+                "name": "Baccarat Rouge Elite",
+                "slug": "baccarat-rouge-elite",
+                "description": "An intoxicating blend of saffron, Egyptian jasmine, and warm amberwood.",
+                "is_active": True,
+                "created_at": "2026-09-24T12:00:00Z",
+                "updated_at": "2026-09-24T12:00:00Z",
+                "primary_image_url": "/uploads/products/d3b07384d113edec49eaa6238ad5ff00.webp",
+                "category": {
+                    "id": 1,
+                    "name": "French Perfumes",
+                    "slug": "french-perfumes",
+                    "created_at": "2026-09-24T12:00:00Z",
+                },
+                "variants": [
+                    {
+                        "id": 1,
+                        "product_id": 1,
+                        "sku": "BRE-50ML",
+                        "size_or_volume": "50ml",
+                        "price": "120.00",
+                        "discount_price": "110.00",
+                        "stock": 25,
+                        "image_url": "/uploads/variants/71e3d9021a8bf92c4b01eec9912048aa.webp",
+                        "is_active": True,
+                    }
+                ],
+                "images": [
+                    {
+                        "id": 1,
+                        "product_id": 1,
+                        "url": "/uploads/products/d3b07384d113edec49eaa6238ad5ff00.webp",
+                        "alt_text": "Baccarat Rouge bottle on black marble",
+                        "is_primary": True,
+                        "display_order": 1,
+                    }
+                ],
+            }
+        },
+    )
 
 
 # --- Backward-Compatibility Aliases ---

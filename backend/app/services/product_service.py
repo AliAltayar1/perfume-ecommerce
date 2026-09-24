@@ -538,3 +538,150 @@ class ProductService:
         await session.commit()
         await session.refresh(variant)
         return variant
+
+    # ---------------------------------------------------------
+    # Product Image Management
+    # ---------------------------------------------------------
+    @staticmethod
+    async def add_product_image(
+        session: AsyncSession,
+        product_id: int,
+        url: str,
+        alt_text: Optional[str] = None,
+        is_primary: bool = False,
+        display_order: int = 0,
+    ) -> ProductImage:
+        """
+        Add an image to a product. If marked as primary, demotes existing primary images.
+        """
+        # Verify product exists
+        product_check = await session.execute(
+            select(Product).where(Product.id == product_id)
+        )
+        if not product_check.scalars().first():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Product with ID {product_id} not found.",
+            )
+
+        if is_primary:
+            # Demote any current primary images
+            existing_primary_res = await session.execute(
+                select(ProductImage).where(
+                    ProductImage.product_id == product_id,
+                    ProductImage.is_primary == True,  # noqa: E712
+                )
+            )
+            for existing_img in existing_primary_res.scalars().all():
+                existing_img.is_primary = False
+
+        new_image = ProductImage(
+            product_id=product_id,
+            url=url,
+            alt_text=alt_text,
+            is_primary=is_primary,
+            display_order=display_order,
+        )
+        session.add(new_image)
+        await session.commit()
+        await session.refresh(new_image)
+        return new_image
+
+    @staticmethod
+    async def delete_product_image(
+        session: AsyncSession,
+        product_id: int,
+        image_id: int,
+    ) -> str:
+        """
+        Delete a product image from the database and return its URL for disk cleanup.
+        """
+        query = select(ProductImage).where(
+            ProductImage.id == image_id,
+            ProductImage.product_id == product_id,
+        )
+        image = (await session.execute(query)).scalars().first()
+        if not image:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Product image with ID {image_id} not found for product {product_id}.",
+            )
+
+        image_url = image.url
+        was_primary = image.is_primary
+
+        await session.delete(image)
+
+        # If deleted image was primary, promote next available image
+        if was_primary:
+            next_img_res = await session.execute(
+                select(ProductImage)
+                .where(ProductImage.product_id == product_id, ProductImage.id != image_id)
+                .order_by(ProductImage.display_order.asc(), ProductImage.id.asc())
+            )
+            next_img = next_img_res.scalars().first()
+            if next_img:
+                next_img.is_primary = True
+
+        await session.commit()
+        return image_url
+
+    @staticmethod
+    async def set_primary_product_image(
+        session: AsyncSession,
+        product_id: int,
+        image_id: int,
+    ) -> ProductImage:
+        """
+        Promote a specific image to be the primary showcase hero image for the product.
+        """
+        # Find target image
+        query = select(ProductImage).where(
+            ProductImage.id == image_id,
+            ProductImage.product_id == product_id,
+        )
+        target_image = (await session.execute(query)).scalars().first()
+        if not target_image:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Product image with ID {image_id} not found for product {product_id}.",
+            )
+
+        # Unset all other primary images
+        all_imgs_res = await session.execute(
+            select(ProductImage).where(
+                ProductImage.product_id == product_id,
+                ProductImage.id != image_id,
+                ProductImage.is_primary == True,  # noqa: E712
+            )
+        )
+        for img in all_imgs_res.scalars().all():
+            img.is_primary = False
+
+        target_image.is_primary = True
+        await session.commit()
+        await session.refresh(target_image)
+        return target_image
+
+    @staticmethod
+    async def update_variant_image(
+        session: AsyncSession,
+        variant_id: int,
+        image_url: str,
+    ) -> tuple[ProductVariant, Optional[str]]:
+        """
+        Update the image URL for a variant and return old image URL for disk cleanup.
+        """
+        query = select(ProductVariant).where(ProductVariant.id == variant_id)
+        variant = (await session.execute(query)).scalars().first()
+        if not variant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Product variant with ID {variant_id} not found.",
+            )
+
+        old_url = variant.image_url
+        variant.image_url = image_url
+        await session.commit()
+        await session.refresh(variant)
+        return variant, old_url

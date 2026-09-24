@@ -36,6 +36,19 @@ class Settings(BaseSettings):
     DATABASE_URL: str | None = None
     DB_ECHO: bool = False
 
+    # Storage & Uploads
+    UPLOAD_DIR: str = "uploads"
+    MAX_IMAGE_SIZE_MB: int = 15
+    WEBP_QUALITY: int = 85
+    PRODUCT_IMAGE_WIDTH: int = 1000
+    PRODUCT_IMAGE_HEIGHT: int = 1000
+    OFFER_IMAGE_WIDTH: int = 1200
+    OFFER_IMAGE_HEIGHT: int = 600
+    VARIANT_IMAGE_WIDTH: int = 1000
+    VARIANT_IMAGE_HEIGHT: int = 1000
+    GENERAL_IMAGE_WIDTH: int = 1000
+    GENERAL_IMAGE_HEIGHT: int = 1000
+
     # CORS (Must be explicit origins when allow_credentials=True)
     BACKEND_CORS_ORIGINS: List[str] = [
         "http://localhost:3000",

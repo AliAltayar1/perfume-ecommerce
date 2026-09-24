@@ -162,3 +162,25 @@ class OfferService:
         await session.delete(offer)
         await session.commit()
         return True
+
+    @staticmethod
+    async def update_offer_banner(
+        session: AsyncSession,
+        offer_id: int,
+        banner_url: str,
+    ) -> tuple[Offer, Optional[str]]:
+        """
+        Update promotional banner URL for an offer and return old banner URL for disk cleanup.
+        """
+        offer = await OfferService.get_offer_by_id(session, offer_id=offer_id)
+        if not offer:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Offer with ID {offer_id} not found.",
+            )
+
+        old_url = offer.banner_url
+        offer.banner_url = banner_url
+        await session.commit()
+        await session.refresh(offer)
+        return offer, old_url

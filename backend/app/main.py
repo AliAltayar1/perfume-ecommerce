@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import Depends, FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.router import api_router
@@ -48,6 +50,10 @@ tags_metadata = [
     {
         "name": "Administration",
         "description": "Admin dashboard endpoints for managing categories, products, inventory variants, offers, orders, and affiliate promoters.",
+    },
+    {
+        "name": "Uploads & Media",
+        "description": "Image and media file upload, automated unified resizing, and WebP compression endpoints.",
     },
     {
         "name": "Health",
@@ -176,6 +182,11 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+# Mount static files directory for local uploads
+upload_dir = Path(settings.UPLOAD_DIR).resolve()
+upload_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(upload_dir)), name="uploads")
 
 # Include API v1 router
 app.include_router(api_router, prefix=settings.API_V1_STR)

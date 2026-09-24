@@ -13,6 +13,8 @@ bcrypt==4.0.1
 pyjwt>=2.9.0
 python-multipart>=0.0.12
 python-dotenv>=1.0.1
+pillow>=11.1.0
+pillow-heif>=1.8.0
 
 # Testing
 httpx>=0.28.0

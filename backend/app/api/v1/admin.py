@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db, require_admin
 from app.models.order import OrderStatus
@@ -17,6 +17,7 @@ from app.schemas.product import (
     CategoryUpdate,
     ProductCreate,
     ProductDetailResponse,
+    ProductImageResponse,
     ProductUpdate,
     ProductVariantCreate,
     ProductVariantResponse,
@@ -28,6 +29,7 @@ from app.schemas.offer import (
     OfferUpdate,
 )
 from app.schemas.user import MessageResponse
+from app.services.image_service import ImageService
 from app.services.offer_service import OfferService
 from app.services.order_service import OrderService
 from app.services.product_service import ProductService
@@ -137,6 +139,78 @@ async def delete_product(
 
 
 # ----------------------------------------------------------------------
+# Product Image Management
+# ----------------------------------------------------------------------
+@router.post(
+    "/products/{product_id}/images",
+    response_model=ProductImageResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload image directly for a product",
+    description="Uploads, uniformly resizes (1000x1000), compresses to WebP, stores on server disk, and creates a product_image record in database.",
+)
+async def upload_product_image(
+    product_id: int,
+    file: UploadFile = File(..., description="Image file to upload"),
+    alt_text: Optional[str] = Form(None, description="Accessibility alt text"),
+    is_primary: bool = Form(False, description="Set as the primary hero image for product cards"),
+    display_order: int = Form(0, description="Gallery display order"),
+    fit_mode: str = Form("contain", description="Unified sizing mode: 'contain', 'cover', or 'scale'"),
+    quality: Optional[int] = Form(None, ge=1, le=100, description="Optional compression quality (default 85)"),
+    db: AsyncSession = Depends(get_db),
+):
+    upload_res = await ImageService.save_image_to_disk(
+        upload_file=file,
+        folder="products",
+        fit_mode=fit_mode,
+        quality=quality,
+    )
+    return await ProductService.add_product_image(
+        session=db,
+        product_id=product_id,
+        url=upload_res["url"],
+        alt_text=alt_text,
+        is_primary=is_primary,
+        display_order=display_order,
+    )
+
+
+@router.delete(
+    "/products/{product_id}/images/{image_id}",
+    response_model=MessageResponse,
+    summary="Delete product image from database and disk",
+)
+async def delete_product_image(
+    product_id: int,
+    image_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    deleted_url = await ProductService.delete_product_image(
+        session=db,
+        product_id=product_id,
+        image_id=image_id,
+    )
+    ImageService.delete_file_by_url(deleted_url)
+    return {"message": "Image deleted successfully"}
+
+
+@router.patch(
+    "/products/{product_id}/images/{image_id}/primary",
+    response_model=ProductImageResponse,
+    summary="Set image as primary showcase hero image",
+)
+async def set_primary_product_image(
+    product_id: int,
+    image_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    return await ProductService.set_primary_product_image(
+        session=db,
+        product_id=product_id,
+        image_id=image_id,
+    )
+
+
+# ----------------------------------------------------------------------
 # Variant Management
 # ----------------------------------------------------------------------
 @router.post("/products/{product_id}/variants", response_model=ProductVariantResponse, status_code=status.HTTP_201_CREATED)
@@ -180,6 +254,35 @@ async def delete_variant(
     Soft-delete variant (sets is_active=False).
     """
     return await ProductService.delete_variant(session=db, variant_id=variant_id)
+
+
+@router.post(
+    "/variants/{variant_id}/image",
+    response_model=ProductVariantResponse,
+    summary="Upload image directly for a product variant",
+    description="Uploads, processes, compresses, and stores variant packaging/bottle image on disk, updating variant record in database.",
+)
+async def upload_variant_image(
+    variant_id: int,
+    file: UploadFile = File(..., description="Variant bottle/packaging image"),
+    fit_mode: str = Form("contain", description="Unified sizing mode: 'contain', 'cover', or 'scale'"),
+    quality: Optional[int] = Form(None, ge=1, le=100, description="Optional compression quality (default 85)"),
+    db: AsyncSession = Depends(get_db),
+):
+    upload_res = await ImageService.save_image_to_disk(
+        upload_file=file,
+        folder="variants",
+        fit_mode=fit_mode,
+        quality=quality,
+    )
+    variant, old_url = await ProductService.update_variant_image(
+        session=db,
+        variant_id=variant_id,
+        image_url=upload_res["url"],
+    )
+    if old_url:
+        ImageService.delete_file_by_url(old_url)
+    return variant
 
 
 # ----------------------------------------------------------------------
@@ -339,3 +442,32 @@ async def delete_admin_offer(
     """
     await OfferService.delete_offer(session=db, offer_id=offer_id)
     return {"message": "Offer deleted successfully"}
+
+
+@router.post(
+    "/offers/{offer_id}/banner",
+    response_model=OfferResponse,
+    summary="Upload banner image directly for a promotional offer",
+    description="Uploads, processes to unified banner size (1200x600), compresses to WebP, and stores on disk, updating offer banner in database.",
+)
+async def upload_offer_banner(
+    offer_id: int,
+    file: UploadFile = File(..., description="Offer banner image file"),
+    fit_mode: str = Form("cover", description="Banner sizing mode: 'cover', 'contain', or 'scale'"),
+    quality: Optional[int] = Form(None, ge=1, le=100, description="Optional compression quality (default 85)"),
+    db: AsyncSession = Depends(get_db),
+):
+    upload_res = await ImageService.save_image_to_disk(
+        upload_file=file,
+        folder="offers",
+        fit_mode=fit_mode,
+        quality=quality,
+    )
+    offer, old_url = await OfferService.update_offer_banner(
+        session=db,
+        offer_id=offer_id,
+        banner_url=upload_res["url"],
+    )
+    if old_url:
+        ImageService.delete_file_by_url(old_url)
+    return offer

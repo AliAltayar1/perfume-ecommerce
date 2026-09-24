@@ -51,6 +51,10 @@ from app.schemas.user import (
     UserUpdate,
     UserUpdateMe,
 )
+from app.schemas.upload import (
+    BatchUploadResponse,
+    UploadImageResponse,
+)
 
 __all__ = [
     "UserRegister",
@@ -93,4 +97,6 @@ __all__ = [
     "OrderUpdateStatus",
     "OrderResponse",
     "OrderOut",
+    "UploadImageResponse",
+    "BatchUploadResponse",
 ]
